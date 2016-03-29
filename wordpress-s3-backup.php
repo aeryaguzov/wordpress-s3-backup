@@ -15,6 +15,8 @@ defined('ABSPATH') || die();
 
 add_action('admin_menu', 'wps3backup_add_menu');
 add_action('admin_init', 'wps3backup_register_settings');
+add_action('admin_enqueue_scripts', 'wps3backup_enqueue_admin_scripts');
+add_action('wp_ajax_wps3backup_test_settings', 'wps3backup_test_settings_handler');
 
 /**
  * Add "S3 Backup" sub_menu for "Tools" menu
@@ -55,3 +57,73 @@ function wps3backup_settings_page() {
     include 'includes/settings.tpl.php';
 }
 
+/**
+ * Enqueue settings page script (handles "test-settings" button click)
+ *
+ * @param string $hook
+ */
+function wps3backup_enqueue_admin_scripts($hook) {
+    if ($hook != 'tools_page_s3-backup-settings') {
+        return;
+    }
+
+    wp_enqueue_script('wps3backup_test_settings', plugin_dir_url(__FILE__) . 'includes/test-settings.js', array('jquery'), 'dev-master', true);
+
+    wp_localize_script(
+        'wps3backup_test_settings',
+        'wps3backup_test_settings_options',
+        [
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('wps3backup_test_settings'),
+
+        ]
+    );
+}
+
+/**
+ * Test user settings:
+ * Upload test file to S3 bucket
+ */
+function wps3backup_test_settings_handler() {
+    check_ajax_referer('wps3backup_test_settings');
+
+    if (empty($_POST['aws_region'])) {
+        wp_send_json_error('Empty AWS region');
+    } elseif (empty($_POST['s3_bucket'])) {
+        wp_send_json_error('Empty S3 bucket');
+    } elseif (empty($_POST['aws_key'])) {
+        wp_send_json_error('Empty AWS key');
+    } elseif (empty($_POST['aws_secret'])) {
+        wp_send_json_error('Empty AWS secret');
+    }
+
+    require 'vendor/autoload.php';
+
+    $s3 = new \Aws\S3\S3Client([
+        'version' => 'latest',
+        'region'  => $_POST['aws_region'],
+        'credentials' => [
+            'key' => $_POST['aws_key'],
+            'secret' => $_POST['aws_secret']
+        ]
+    ]);
+
+    $result = [];
+    $bucket = $_POST['s3_bucket'];
+    $key = 'wps3backup-test';
+    $value = 'wps3backup-test-value';
+
+    try {
+        $s3->putObject(['Bucket' => $bucket, 'Key' => $key, 'Body' => $value]);
+
+        $result = $s3->getObject(['Bucket' => $bucket, 'Key' => $key]);
+    } catch (Exception $e) {
+        wp_send_json_error($e->getMessage());
+    }
+
+    if ($result && !empty($result['Body']) && $result['Body'] == $value) {
+        wp_send_json_success(sprintf('Successfully uploaded object with key: "%s"', $key));
+    } else {
+        wp_send_json_error(sprintf('Failed to upload object with key: "%s"', $key));
+    }
+}

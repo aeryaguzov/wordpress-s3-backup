@@ -5,7 +5,7 @@
  */
 ?>
 
-<div class="wrap">
+<div id="wps3backup-settings" class="wrap">
     <?php if ($tpl_vars['settings_updated']) : ?>
         <div class="updated fade">
             <p>
@@ -24,7 +24,7 @@
             <tr valign="top">
                 <th scope="row"><?php _e( 'S3 region', 'wps3backup' ); ?></th>
                 <td>
-                    <input type="text" name="wps3backup_s3_region" value="<?= $tpl_vars['wps3backup_s3_region_value'] ?>">
+                    <input type="text" id="wps3backup-s3-region" name="wps3backup_s3_region" value="<?= $tpl_vars['wps3backup_s3_region_value'] ?>">
                     <p class="description">
                         <?php _e( 'You can find more information about regions at', 'wps3backup' ); ?>
                         <a href="http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region">
@@ -36,7 +36,7 @@
             <tr valign="top">
                 <th scope="row"><?php _e( 'S3 bucket', 'wps3backup' ); ?></th>
                 <td>
-                    <input type="text" name="wps3backup_s3_bucket" value="<?= $tpl_vars['wps3backup_s3_bucket_value'] ?>">
+                    <input type="text" id="wps3backup-s3-bucket" name="wps3backup_s3_bucket" value="<?= $tpl_vars['wps3backup_s3_bucket_value'] ?>">
                     <p class="description">
                         <?php _e( 'You need to create and configure S3 bucket. More info: ', 'wps3backup' ); ?>
                         <a href="http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html">
@@ -48,7 +48,7 @@
             <tr valign="top">
                 <th scope="row"><?php _e( 'AWS API Key', 'wps3backup' ); ?></th>
                 <td>
-                    <input type="text" name="wps3backup_s3_api_key" value="<?= $tpl_vars['wps3backup_s3_api_key_value'] ?>">
+                    <input type="text" id="wps3backup-s3-api-key" name="wps3backup_s3_api_key" value="<?= $tpl_vars['wps3backup_s3_api_key_value'] ?>">
                     <p class="description">
                         <?php _e( 'You need to provide Access Key ID. More info:  ', 'wps3backup' ); ?>
                         <a href="http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSGettingStartedGuide/AWSCredentials.html">
@@ -60,7 +60,7 @@
             <tr valign="top">
                 <th scope="row"><?php _e( 'AWS API Secret', 'wps3backup' ); ?></th>
                 <td>
-                    <input type="text" name="wps3backup_s3_api_secret" value="<?= $tpl_vars['wps3backup_s3_api_secret_value'] ?>">
+                    <input type="text" id="wps3backup-s3-api-secret" name="wps3backup_s3_api_secret" value="<?= $tpl_vars['wps3backup_s3_api_secret_value'] ?>">
                     <p class="description">
                         <?php _e( 'You need to provide Secret Access Key. More info:  ', 'wps3backup' ); ?>
                         <a href="http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSGettingStartedGuide/AWSCredentials.html">
@@ -74,9 +74,9 @@
                     <?php submit_button(); ?>
                 </td>
                 <td>
-                    <input type="button" name="test-settings" id="test-settings" class="button button-controls" value="Test Settings">
+                    <input type="button" name="test_settings" id="test-settings" class="button button-controls" value="Test Settings">
                     <p class="description">
-                        <?php _e( 'We upload test file "test-wordpress-s3-backup-settings" to your S3 bucket to ensure you have provided valid settings', 'wps3backup' ); ?>
+                        <?php _e( 'We upload test file "wps3backup-test" to your S3 bucket to ensure you have provided valid settings', 'wps3backup' ); ?>
                     </p>
                 </td>
             </tr>
