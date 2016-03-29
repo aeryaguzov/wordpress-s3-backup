@@ -1,0 +1,14 @@
+{
+    "name": "aeryaguzov/wordpress-s3-backup",
+    "description": "Wordpress plugin to backup site and database on amazon S3 service",
+    "license": "GPLv2",
+    "authors": [
+        {
+            "name": "Andrey Ryaguzov",
+            "email": "dev.aeryaguzov@gmail.com"
+        }
+    ],
+    "require": {
+        "aws/aws-sdk-php": "^3.17"
+    }
+}
