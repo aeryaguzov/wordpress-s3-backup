@@ -29,7 +29,7 @@
                 <td>
                     <input type="text" id="wps3backup-backup-dir" name="wps3backup_backup_dir" value="<?= $tpl_vars['wps3backup_backup_dir_value'] ?>">
                     <p class="description">
-                        <?php _e( 'We need writable directory where we can create backup archives, please use absolute path without trailing slash (ex: "/home/wordpress/backup")', 'wps3backup' ); ?>
+                        <?php _e( 'We need writable (tmp) directory where we can create backup archives, please use absolute path without trailing slash (ex: "/tmp/s3-backup")', 'wps3backup' ); ?>
                     </p>
                 </td>
             </tr>

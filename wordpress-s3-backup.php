@@ -13,10 +13,14 @@ License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 defined('ABSPATH') || die();
 
+defined('WPS3BACKUP_LATEST_BACKUP_NAME') || define('WPS3BACKUP_LATEST_BACKUP_NAME', 'latest.zip');
+
 add_action('admin_menu', 'wps3backup_add_menu');
 add_action('admin_init', 'wps3backup_register_settings');
 add_action('admin_enqueue_scripts', 'wps3backup_enqueue_admin_scripts');
-add_action('wp_ajax_wps3backup_test_settings', 'wps3backup_test_settings_handler');
+
+add_action('wp_ajax_wps3backup_backup', 'wps3backup_backup_handler');
+add_action('wp_ajax_wps3backup_upload', 'wps3backup_upload_handler');
 
 /**
  * Add "S3 Backup" sub_menu for "Tools" menu
@@ -69,25 +73,96 @@ function wps3backup_enqueue_admin_scripts($hook) {
         return;
     }
 
-    wp_enqueue_script('wps3backup_test_settings', plugin_dir_url(__FILE__) . 'includes/test-settings.js', array('jquery'), 'dev-master', true);
+    wp_enqueue_script(
+        'wps3backup_controls',
+        plugin_dir_url(__FILE__) . 'includes/controls.js',
+        array('jquery'),
+        '1.0.0',
+        true
+    );
 
     wp_localize_script(
-        'wps3backup_test_settings',
-        'wps3backup_test_settings_options',
+        'wps3backup_controls',
+        'wps3backup_controls_options',
         [
             'ajax_url' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('wps3backup_test_settings'),
+            'nonce' => wp_create_nonce('wps3backup_controls'),
 
         ]
     );
 }
 
 /**
- * Test user settings:
- * Upload test file to S3 bucket
+ * Test user settings: make backup
  */
-function wps3backup_test_settings_handler() {
-    check_ajax_referer('wps3backup_test_settings');
+function wps3backup_backup_handler() {
+    check_ajax_referer('wps3backup_controls');
+
+    if (empty($_POST['backup_dir'])) {
+        wp_send_json_error('Empty backup directory');
+    }
+
+    $backupDir = realpath($_POST['backup_dir']);
+
+    if (!$backupDir) {
+        wp_send_json_error('Backup directory does not exist');
+    }
+
+    if (!is_writable($backupDir)) {
+        wp_send_json_error('Backup directory is not writable');
+    }
+
+    try {
+        wps3backup_make_backup($backupDir);
+    } catch (Exception $e) {
+        wp_send_json_error($e->getMessage());
+    }
+
+    if (file_exists($backupDir . DIRECTORY_SEPARATOR . WPS3BACKUP_LATEST_BACKUP_NAME)) {
+        wp_send_json_success(
+            sprintf(
+                'Successfully created backup for your site! See "%s" in your backup directory',
+                WPS3BACKUP_LATEST_BACKUP_NAME
+            )
+        );
+    } else {
+        wp_send_json_error(
+            sprintf(
+                'Failed to create backup for your site. Can\'t find "%s" in your backup directory',
+                WPS3BACKUP_LATEST_BACKUP_NAME
+            )
+        );
+    }
+}
+
+/**
+ * Test user settings: upload backup to S3
+ */
+function wps3backup_upload_handler() {
+    check_ajax_referer('wps3backup_controls');
+
+    if (empty($_POST['backup_dir'])) {
+        wp_send_json_error('Empty backup directory');
+    }
+
+    if (!realpath($_POST['backup_dir'])) {
+        wp_send_json_error('Backup directory does not exist');
+    }
+
+    $backupFile = realpath(
+        realpath($_POST['backup_dir'])
+        . DIRECTORY_SEPARATOR
+        . WPS3BACKUP_LATEST_BACKUP_NAME
+    );
+
+    if (!$backupFile) {
+        wp_send_json_error(
+            sprintf(
+                'Can\'t find "%s" in backup directory, please run backup first',
+                WPS3BACKUP_LATEST_BACKUP_NAME
+            )
+        );
+    }
 
     if (empty($_POST['aws_region'])) {
         wp_send_json_error('Empty AWS region');
@@ -110,22 +185,97 @@ function wps3backup_test_settings_handler() {
         ]
     ]);
 
-    $result = [];
     $bucket = $_POST['s3_bucket'];
-    $key = 'wps3backup-test';
-    $value = 'wps3backup-test-value';
+    $key = str_replace(' ', '_', strtolower(get_bloginfo())) . '_' . date('Y_m_d');
 
     try {
-        $s3->putObject(['Bucket' => $bucket, 'Key' => $key, 'Body' => $value]);
-
-        $result = $s3->getObject(['Bucket' => $bucket, 'Key' => $key]);
+        $s3->putObject([
+            'Bucket' => $bucket,
+            'Key' => $key,
+            'SourceFile' => $backupFile
+        ]);
     } catch (Exception $e) {
         wp_send_json_error($e->getMessage());
     }
 
-    if ($result && !empty($result['Body']) && $result['Body'] == $value) {
-        wp_send_json_success(sprintf('Successfully uploaded object with key: "%s"', $key));
-    } else {
-        wp_send_json_error(sprintf('Failed to upload object with key: "%s"', $key));
+    wp_send_json_success(sprintf('Successfully uploaded object with key: "%s"', $key));
+}
+
+/**
+ * Make site archive and store it in backup directory
+ *
+ * @param string $backupDir
+ */
+function wps3backup_make_backup($backupDir) {
+    $filename = $backupDir . DIRECTORY_SEPARATOR . WPS3BACKUP_LATEST_BACKUP_NAME;
+
+    if (file_exists($filename)) {
+        unlink($filename);
     }
+
+    $archive = new ZipArchive();
+    $archive->open($filename, ZipArchive::CREATE);
+
+    $rootPath = wps3backup_get_root_path(__DIR__);
+
+    if (!$rootPath) {
+        throw new RuntimeException('Unable to find site root path');
+    }
+
+    $archive = wps3backup_fill_archive($rootPath, $archive, $rootPath . DIRECTORY_SEPARATOR);
+    $archive->close();
+}
+
+/**
+ * Find site root path
+ *
+ * @param string $path
+ * @return bool|string
+ */
+function wps3backup_get_root_path($path) {
+    if (defined('ABSPATH')) {
+        return realpath(ABSPATH);
+    }
+
+    $path = realpath($path);
+
+    if (!$path) {
+        return false;
+    }
+
+    if (file_exists($path . DIRECTORY_SEPARATOR. 'wp-config.php')) {
+        return $path;
+    }
+
+    return wps3backup_get_root_path(dirname($path));
+}
+
+/**
+ * Recursively fill archive with files
+ *
+ * @param string $path
+ * @param ZipArchive $archive
+ * @param string $stripPath - path to strip file names
+ * @return ZipArchive
+ */
+function wps3backup_fill_archive($path, ZipArchive $archive, $stripPath) {
+
+    $iterator = new \RecursiveDirectoryIterator(
+        $path,
+        \FilesystemIterator::SKIP_DOTS
+    );
+
+    /** @var \SplFileInfo $item */
+    foreach($iterator as $item) {
+        if ($item->isDir()) {
+            $archive = wps3backup_fill_archive($item->getRealPath(), $archive, $stripPath);
+        } elseif ($item->isFile()) {
+            $archive->addFile(
+                $item->getRealPath(),
+                str_replace($stripPath, '', $item->getRealPath())
+            );
+        }
+    }
+
+    return $archive;
 }
