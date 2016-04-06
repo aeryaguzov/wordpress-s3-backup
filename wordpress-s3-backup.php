@@ -35,6 +35,7 @@ function wps3backup_add_menu() {
  * Register plugin settings
  */
 function wps3backup_register_settings() {
+    register_setting('wordpress_s3_backup', 'wps3backup_backup_dir');
     register_setting('wordpress_s3_backup', 'wps3backup_s3_region');
     register_setting('wordpress_s3_backup', 'wps3backup_s3_bucket');
     register_setting('wordpress_s3_backup', 'wps3backup_s3_api_key');
@@ -47,6 +48,7 @@ function wps3backup_register_settings() {
  */
 function wps3backup_settings_page() {
     $tpl_vars = array(
+        'wps3backup_backup_dir_value' => get_option('wps3backup_backup_dir', ''),
         'wps3backup_s3_region_value' => get_option('wps3backup_s3_region', ''),
         'wps3backup_s3_bucket_value' => get_option('wps3backup_s3_bucket', ''),
         'wps3backup_s3_api_key_value' => get_option('wps3backup_s3_api_key', ''),
