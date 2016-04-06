@@ -21,6 +21,21 @@
     <form method="post" action="options.php">
         <?php settings_fields( 'wordpress_s3_backup' ); ?>
         <table class="form-table">
+            <tr>
+                <th colspan="2"><h3>Backup Settings</h3></th>
+            </tr>
+            <tr valign="top">
+                <th scope="row"><?php _e( 'Backup directory', 'wps3backup' ); ?></th>
+                <td>
+                    <input type="text" id="wps3backup-backup-dir" name="wps3backup_backup_dir" value="<?= $tpl_vars['wps3backup_backup_dir_value'] ?>">
+                    <p class="description">
+                        <?php _e( 'We need writable directory where we can create backup archives, please use absolute path without trailing slash (ex: "/home/wordpress/backup")', 'wps3backup' ); ?>
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <th colspan="2"><h3>S3 Settings</h3></th>
+            </tr>
             <tr valign="top">
                 <th scope="row"><?php _e( 'S3 region', 'wps3backup' ); ?></th>
                 <td>
@@ -69,15 +84,33 @@
                     </p>
                 </td>
             </tr>
+
+            <tr>
+                <th colspan="2"><h3>Test your settings</h3></th>
+            </tr>
+
             <tr valign="top">
+                <th scope="row"><?php _e( 'Make backup', 'wps3backup' ); ?></th>
+                <td>
+                    <input type="button" name="backup" id="backup" class="button button-controls" value="Backup my site!">
+                    <p class="description">
+                        <?php _e( 'We will make a copy of your site according to your backup settings', 'wps3backup' ); ?>
+                    </p>
+                </td>
+            </tr>
+            <tr valign="top">
+                <th scope="row"><?php _e( 'Upload to S3', 'wps3backup' ); ?></th>
+                <td>
+                    <input type="button" name="upload" id="upload" class="button button-controls" value="Upload my site to S3!">
+                    <p class="description">
+                        <?php _e( 'We upload latest site archive to Amazon Simple Storage Service according to your S3 settings', 'wps3backup' ); ?>
+                    </p>
+                </td>
+            </tr>
+            <tr valign="top">
+                <th scope="row"><?php _e( 'Save settings', 'wps3backup' ); ?></th>
                 <td>
                     <?php submit_button(); ?>
-                </td>
-                <td>
-                    <input type="button" name="test_settings" id="test-settings" class="button button-controls" value="Test Settings">
-                    <p class="description">
-                        <?php _e( 'We upload test file "wps3backup-test" to your S3 bucket to ensure you have provided valid settings', 'wps3backup' ); ?>
-                    </p>
                 </td>
             </tr>
         </table>
