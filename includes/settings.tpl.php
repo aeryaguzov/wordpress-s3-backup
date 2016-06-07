@@ -6,11 +6,33 @@
 ?>
 
 <div id="wps3backup-settings" class="wrap">
-    <?php if ($tpl_vars['settings_updated']) : ?>
-        <div class="updated fade">
+    <?php
+        $backup_dir_errors = get_settings_errors('wps3backup_backup_dir');
+        $backup_type_errors = get_settings_errors('wps3backup_backup_type');
+        $backup_settings_updated = $tpl_vars['settings_updated'];
+
+        $show_notify = false;
+
+        if (!empty($backup_dir_errors)) {
+            $show_notify = true;
+            $class = 'notice notice-error';
+            $message = array_pop($backup_dir_errors)['message'];
+        } elseif (!empty($backup_type_errors)) {
+            $show_notify = true;
+            $class = 'notice notice-error';
+            $message = array_pop($backup_type_errors)['message'];
+        } elseif ($backup_settings_updated) {
+            $show_notify = true;
+            $class = 'notice notice-success';
+            $message = translate('Wordpress S3 Backup Settings successfully saved!', 'wps3backup');
+        }
+    ?>
+
+    <?php if ($show_notify) : ?>
+        <div class="<?php echo $class; ?>">
             <p>
                 <strong>
-                    <?php _e( 'Wordpress S3 Backup Settings successfully saved!', 'wps3backup' ); ?>
+                    <?php echo $message ?>
                 </strong>
             </p>
         </div>
@@ -30,6 +52,34 @@
                     <input type="text" id="wps3backup-backup-dir" name="wps3backup_backup_dir" value="<?= $tpl_vars['wps3backup_backup_dir_value'] ?>">
                     <p class="description">
                         <?php _e( 'We need writable (tmp) directory where we can create backup archives, please use absolute path without trailing slash (ex: "/tmp/s3-backup")', 'wps3backup' ); ?>
+                    </p>
+                </td>
+            </tr>
+            <tr valign="top">
+                <th scope="row"><?php _e( 'Backup type', 'wps3backup' ); ?></th>
+                <td>
+                    <?php $type_options = $tpl_vars['wps3backup_backup_type_value']; ?>
+                    <input
+                        type="checkbox"
+                        id="wps3backup-backup-type-files"
+                        name="wps3backup_backup_type[files]"
+                        <?php if (isset($type_options['files']) && $type_options['files']) : ?>
+                        checked="checked"
+                        <?php endif; ?>
+                    >
+                    <label for="wps3backup-backup-type-files">Files</label>
+                    <br/><br/>
+                    <input
+                        type="checkbox"
+                        id="wps3backup-backup-type-database"
+                        name="wps3backup_backup_type[database]"
+                        <?php if (isset($type_options['database']) && $type_options['database']) : ?>
+                            checked="checked"
+                        <?php endif; ?>
+                    >
+                    <label for="wps3backup-backup-type-database">Database</label>
+                    <p class="description">
+                        <?php _e( 'Do you want to backup only your files, or your database, or both? Please, choose at least one option', 'wps3backup' ); ?>
                     </p>
                 </td>
             </tr>

@@ -39,7 +39,24 @@ function wps3backup_add_menu() {
  * Register plugin settings
  */
 function wps3backup_register_settings() {
-    register_setting('wordpress_s3_backup', 'wps3backup_backup_dir');
+    // Main settings
+    register_setting('wordpress_s3_backup', 'wps3backup_backup_dir', function($input) {
+        if (empty($input)) {
+            add_settings_error('wps3backup_backup_dir', 100500, translate('Backup directory is empty!', 'wps3backup'));
+        }
+
+        return $input;
+    });
+
+    register_setting('wordpress_s3_backup', 'wps3backup_backup_type', function($input) {
+        if (empty($input)) {
+            add_settings_error('wps3backup_backup_type', 100500, translate('Backup options are empty!', 'wps3backup'));
+        }
+
+        return $input;
+    });
+
+    // S3 settings
     register_setting('wordpress_s3_backup', 'wps3backup_s3_region');
     register_setting('wordpress_s3_backup', 'wps3backup_s3_bucket');
     register_setting('wordpress_s3_backup', 'wps3backup_s3_api_key');
@@ -53,6 +70,7 @@ function wps3backup_register_settings() {
 function wps3backup_settings_page() {
     $tpl_vars = array(
         'wps3backup_backup_dir_value' => get_option('wps3backup_backup_dir', ''),
+        'wps3backup_backup_type_value' => get_option('wps3backup_backup_type', ''),
         'wps3backup_s3_region_value' => get_option('wps3backup_s3_region', ''),
         'wps3backup_s3_bucket_value' => get_option('wps3backup_s3_bucket', ''),
         'wps3backup_s3_api_key_value' => get_option('wps3backup_s3_api_key', ''),
