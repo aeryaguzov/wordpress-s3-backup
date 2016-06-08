@@ -74,7 +74,7 @@
                         id="wps3backup-backup-type-database"
                         name="wps3backup_backup_type[database]"
                         <?php if (isset($type_options['database']) && $type_options['database']) : ?>
-                            checked="checked"
+                        checked="checked"
                         <?php endif; ?>
                     >
                     <label for="wps3backup-backup-type-database">Database</label>

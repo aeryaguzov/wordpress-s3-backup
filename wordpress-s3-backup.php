@@ -13,6 +13,7 @@ License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 defined('ABSPATH') || die();
 
+defined('WPS3BACKUP_DUMP_NAME') || define('WPS3BACKUP_DUMP_NAME', 'dump.sql');
 defined('WPS3BACKUP_LATEST_BACKUP_NAME') || define('WPS3BACKUP_LATEST_BACKUP_NAME', 'latest.zip');
 
 add_action('admin_menu', 'wps3backup_add_menu');
@@ -120,6 +121,10 @@ function wps3backup_backup_handler() {
         wp_send_json_error('Empty backup directory');
     }
 
+    if (empty($_POST['backup_files']) && empty($_POST['backup_database'])) {
+        wp_send_json_error('Empty backup options');
+    }
+
     $backupDir = realpath($_POST['backup_dir']);
 
     if (!$backupDir) {
@@ -131,7 +136,7 @@ function wps3backup_backup_handler() {
     }
 
     try {
-        wps3backup_make_backup($backupDir);
+        wps3backup_make_backup($backupDir, $_POST['backup_files'], $_POST['backup_database']);
     } catch (Exception $e) {
         wp_send_json_error($e->getMessage());
     }
@@ -224,7 +229,7 @@ function wps3backup_upload_handler() {
  *
  * @param string $backupDir
  */
-function wps3backup_make_backup($backupDir) {
+function wps3backup_make_backup($backupDir, $backupFiles, $backupDatabase) {
     $filename = $backupDir . DIRECTORY_SEPARATOR . WPS3BACKUP_LATEST_BACKUP_NAME;
 
     if (file_exists($filename)) {
@@ -240,8 +245,33 @@ function wps3backup_make_backup($backupDir) {
         throw new RuntimeException('Unable to find site root path');
     }
 
-    $archive = wps3backup_fill_archive($rootPath, $archive, $rootPath . DIRECTORY_SEPARATOR);
+    if ($backupFiles) {
+        $archive = wps3backup_fill_archive($rootPath, $archive, $rootPath . DIRECTORY_SEPARATOR);
+    }
+
+    if ($backupDatabase) {
+        require 'vendor/autoload.php';
+        
+        $dumper = new \Ifsnop\Mysqldump\Mysqldump(
+            sprintf(
+                'mysql:host=%s;dbname=%s',
+                DB_HOST,
+                DB_NAME
+            ),
+            DB_USER,
+            DB_PASSWORD
+        );
+
+        $dumper->start($backupDir . DIRECTORY_SEPARATOR . WPS3BACKUP_DUMP_NAME);
+        $archive->addFile($backupDir . DIRECTORY_SEPARATOR . WPS3BACKUP_DUMP_NAME, WPS3BACKUP_DUMP_NAME);
+    }
+
     $archive->close();
+
+    // delete dump file only after archive was closed
+    if ($backupDatabase) {
+        unlink($backupDir . DIRECTORY_SEPARATOR . WPS3BACKUP_DUMP_NAME);
+    }
 }
 
 /**

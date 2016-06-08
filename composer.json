@@ -9,6 +9,7 @@
         }
     ],
     "require": {
-        "aws/aws-sdk-php": "^3.17"
+        "aws/aws-sdk-php": "^3.17",
+        "ifsnop/mysqldump-php": "^2.1"
     }
 }

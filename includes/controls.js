@@ -8,13 +8,15 @@ jQuery('#backup').click(function() {
         {
             _ajax_nonce: wps3backup_controls_options.nonce,
             action: 'wps3backup_backup',
-            backup_dir: jQuery('#wps3backup-backup-dir').val()
+            backup_dir: jQuery('#wps3backup-backup-dir').val(),
+            backup_files: jQuery('#wps3backup-backup-type-files').is(':checked') ? 1 : 0,
+            backup_database: jQuery('#wps3backup-backup-type-database').is(':checked') ? 1 : 0
         },
         function (data) {
-            var noticeClass = data.success ? 'updated' : 'error';
+            var noticeClass = data.success ? 'notice-success' : 'notice-error';
 
             jQuery('#wps3backup-settings').prepend(
-                '<div class="' + noticeClass + ' fade"><p><strong>' + data.data + '</strong></p>'
+                '<div class="notice ' + noticeClass + ' fade"><p><strong>' + data.data + '</strong></p>'
             );
         }
     );
